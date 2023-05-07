@@ -1,5 +1,6 @@
 package com.geektrust.backend.services;
 
+import com.geektrust.backend.constants.Common;
 import com.geektrust.backend.dtos.TotalCollection;
 import com.geektrust.backend.entities.CheckIn;
 import com.geektrust.backend.entities.MetroCard;
@@ -51,15 +52,7 @@ public class PassengerService implements IPassengerService {
     String fromStation
   ) {
     CheckIn checkIn = new CheckIn(cardId, passengerType, fromStation);
-    int amount = checkIn.getPassengerType().getVal();
-    int remaining = metroCardService.transactCard(cardId, amount);
-
-    passengerRepository.checkInPassenger(
-      cardId,
-      checkIn.getFromStation(),
-      checkIn.getPassengerType(),
-      remaining
-    );
+    passengerRepository.checkInPassenger(checkIn);
   }
 
   @Override

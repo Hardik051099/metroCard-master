@@ -1,10 +1,13 @@
 package com.geektrust.backend.repositories;
 
 import com.geektrust.backend.constants.Common;
+import com.geektrust.backend.entities.CheckIn;
 import com.geektrust.backend.entities.MetroCard;
 import com.geektrust.backend.entities.Passenger;
 import com.geektrust.backend.entities.PassengerType;
 import com.geektrust.backend.entities.StationName;
+import com.geektrust.backend.services.IMetroCardService;
+import com.geektrust.backend.services.MetroCardService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -15,8 +18,10 @@ public class PassengerRepository implements IPassengerRepository {
   private Map<String, Integer> stationDiscountMap;
   private Map<StationName, Map<PassengerType, Integer>> stationTypeCountMap;
   private Map<String, StationName> passengerMap;
+  private final IMetroCardService metroCardService;
 
-  public PassengerRepository() {
+  public PassengerRepository(IMetroCardService metroCardService) {
+    this.metroCardService = metroCardService;
     stationAmountMap = new HashMap<>();
     stationDiscountMap = new HashMap<>();
     stationTypeCountMap = new HashMap<>();
@@ -29,36 +34,42 @@ public class PassengerRepository implements IPassengerRepository {
   }
 
   @Override
-  public void checkInPassenger(
-    String cardId,
-    StationName fromStation,
-    PassengerType passengerType,
-    int amount
-  ) {
-    if (passengerMap.containsKey(cardId)) {
-      int collection = stationAmountMap.get(fromStation.name()) + amount;
-      int discount = stationDiscountMap.get(fromStation.name()) + amount;
-      stationDiscountMap.put(fromStation.name(), discount);
+  public void checkInPassenger(CheckIn checkIn) {
+    String cardId = checkIn.getCardId();
 
+    if (passengerMap.containsKey(cardId)) {
+      int amount = checkIn.getPassengerType().getVal() / Common.TWO;
+      int collection =
+        stationAmountMap.get(checkIn.getFromStation().name()) + amount;
+      int discount =
+        stationDiscountMap.get(checkIn.getFromStation().name()) + amount;
+      stationDiscountMap.put(checkIn.getFromStation().name(), discount);
+
+      int remaining = metroCardService.transactCard(cardId, amount);
       if (amount != Common.ZERO) {
-        collection += amount * Common.PERCENTAGE;
+        collection += remaining * Common.PERCENTAGE;
       }
-      stationAmountMap.put(fromStation.name(), collection);
+      //            System.out.println(amount+" "+collection+" "+discount+" "+remaining);
+      stationAmountMap.put(checkIn.getFromStation().name(), collection);
       passengerMap.remove(cardId);
     } else {
-      int collection = stationAmountMap.get(fromStation.name()) + amount;
+      int amount = checkIn.getPassengerType().getVal();
+      int collection =
+        stationAmountMap.get(checkIn.getFromStation().name()) + amount;
 
+      int remaining = metroCardService.transactCard(cardId, amount);
       if (amount != Common.ZERO) {
-        collection += amount * Common.PERCENTAGE;
+        collection += remaining * Common.PERCENTAGE;
       }
-      stationAmountMap.put(fromStation.name(), collection);
-      passengerMap.put(cardId, fromStation);
+      //            System.out.println(amount+" "+collection+" "+remaining);
+      stationAmountMap.put(checkIn.getFromStation().name(), collection);
+      passengerMap.put(cardId, checkIn.getFromStation());
     }
 
     updatePassengerCount(
-      stationTypeCountMap.get(fromStation),
-      passengerType,
-      fromStation
+      stationTypeCountMap.get(checkIn.getFromStation()),
+      checkIn.getPassengerType(),
+      checkIn.getFromStation()
     );
   }
 

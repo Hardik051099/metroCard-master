@@ -20,12 +20,15 @@ import com.geektrust.backend.services.RevenueService;
 public class ApplicationConfig {
 
   private final IMetroCardRepository metroCardRepository = new MetroCardRepository();
-  private final IPassengerRepository passengerRepository = new PassengerRepository();
   private final IRevenueRepository revenueRepository = new RevenueRepository();
 
   private final IMetroCardService metroCardService = new MetroCardService(
     metroCardRepository
   );
+  private final IPassengerRepository passengerRepository = new PassengerRepository(
+    metroCardService
+  );
+
   private final IPassengerService passengerService = new PassengerService(
     metroCardRepository,
     passengerRepository,
